@@ -3,19 +3,17 @@
 import React from "react";
 import { Layout } from "antd";
 import Sidebar from "@/components/sidebar/Sidebar";
-import {  useRouter } from "next/navigation";
 import { useChatLayout } from "@/context/ChatLayoutContext";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 const { Sider, Content } = Layout;
 
-export default function AppLayout({ children }) {
-  const {currentUser} = useAuth()
+export default function ChatLayout({ children }) {
   const { isSidebarVisible,  isMobileView ,toggleSidebar} = useChatLayout()
   const router = useRouter()
-  if(!currentUser){
-    router.push('/')
-  }
+ 
+
 
   return (
     <Layout className="h-dvh w-full">

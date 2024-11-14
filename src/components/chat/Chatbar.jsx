@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Avatar, Dropdown, Button, Flex } from 'antd';
+import { Avatar, Dropdown, Button, Flex, Tag } from 'antd';
 import { 
   ClearOutlined, 
   DeleteOutlined, 
@@ -8,50 +8,37 @@ import {
   MoreOutlined, 
   PhoneOutlined, 
   StopOutlined, 
+  TagsOutlined, 
   UserOutlined, 
   VideoCameraOutlined 
 } from '@ant-design/icons';
 import { useChat } from '@/context/ChatContext';
-import { db as firestoreDb } from '@/firebase/firebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
-import dayjs from 'dayjs';
+import TagModal from './TagModal';
 
 const ChatHeader = ({ onCloseChat, showProfile }) => {
   const { chatData } = useChat();
-  const [userStatus, setUserStatus] = useState({ online: false, lastSeen: null });
+  const [tags, setTags] = useState(chatData?.tags || []);
+  const [showTagModal, setShowTagModal] = useState(false);
 
-  // Fetch user's online status from Firestore
-  useEffect(() => {
-    if (chatData?.user?.uid) {
-      const userRef = doc(firestoreDb, 'Users', chatData.user.uid);
-      const unsubscribe = onSnapshot(userRef, (doc) => {
-        if (doc.exists()) {
-          const statusData = doc.data();
-          setUserStatus({
-            online: statusData.online,
-            lastSeen: statusData.lastSeen?.toDate() || null,
-          });
-        }
-      });
-
-      // Cleanup on unmount
-      return () => unsubscribe();
-    }
-  }, [chatData?.user?.uid]);
-
-  // Format the last seen time
-  const formatLastSeen = (lastSeen) => {
-    // if (!lastSeen) return 'offline';
-    return `last seen ${dayjs(lastSeen).format('MMMM D, YYYY [at] h:mm A')}`;
-  };
+  useEffect(()=>{
+     if(chatData?.tags){
+      setTags(chatData.tags)
+     }
+  },[chatData])
 
   // Menu items for the dropdown
   const menuItems = [
     {
-      key: '2',
+      key: '1',
       label: 'Profile',
       icon: <UserOutlined />,
       onClick: showProfile,
+    },
+    {
+      key: '2',
+      label: 'Add Tag',
+      icon: <TagsOutlined />,
+      onClick:  () => setShowTagModal(true),
     },
     {
       key: '3',
@@ -75,25 +62,27 @@ const ChatHeader = ({ onCloseChat, showProfile }) => {
     <Flex
       align="center"
       justify="between"
-      className="h-16 w-full p-4 bg-blue-800 dark:bg-gray-800 text-white"
+      className="h-16 w-full p-4 bg-blue-800 dark:bg-gray-800 text-white drop-shadow-md"
     >
       {/* User Info */}
       <Flex align="center" className="flex-1 w-3/4 md:w-full gap-2">
         <Button
           size="small"
           type="text"
-          className="md:hidden text-gray-400"
+          className="md:hidden text-gray-200"
           icon={<LeftOutlined />}
           onClick={onCloseChat}
         />
-        <Avatar src={chatData?.user.photoURL} size={40} className='bg-blue-200'/>
-        <Flex vertical className="flex-1 min-w-0">
+        <Avatar src={chatData?.user.photoURL} size={40} className='bg-blue-200 mr-1'/>
+        <Flex vertical className="flex-1 gap-1 min-w-0">
           <span className="text-base font-semibold tracking-wide truncate capitalize" title={chatData?.user.displayName}>
             {chatData?.user.displayName}
           </span>
-          <span className={`${userStatus.online ? 'text-green-300': ''} text-xs text-gray-400`}>
-            {userStatus.online ? 'online' : userStatus.lastSeen ? formatLastSeen(userStatus?.lastSeen): 'offline'}
-          </span>
+          <div className="flex gap-1">
+              {tags?.length > 0 && tags.map((tag, idx) => (
+                <Tag  key={idx}  className='bg-blue-50 dark:bg-blue-700 dark:text-gray-300 border-none capitalize'>{tag}</Tag>
+              ))}
+            </div>
         </Flex>
       </Flex>
 
@@ -112,6 +101,7 @@ const ChatHeader = ({ onCloseChat, showProfile }) => {
           title="Voice Call"
         />
         <Dropdown
+        className='w-80'
           menu={{
             items: menuItems,
           }}
@@ -120,6 +110,13 @@ const ChatHeader = ({ onCloseChat, showProfile }) => {
           <Button type="text" icon={<MoreOutlined className='hover:text-blue-200 text-white font-bold'/>} />
         </Dropdown>
       </Flex>
+      <TagModal 
+        chatId={chatData?.chatId} 
+        visible={showTagModal} 
+        onClose={() => setShowTagModal(false)} 
+        tags={tags} 
+        setTags={setTags} 
+      />
     </Flex>
   );
 };

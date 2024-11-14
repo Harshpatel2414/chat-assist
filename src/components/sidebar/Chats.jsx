@@ -1,45 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import ChatCard from './ChatCard';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/firebase/firebaseConfig';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/context/ChatContext';
-import { useRouter } from 'next/navigation';
 import { Divider, Flex } from 'antd';
+import ChatService from '@/firebase/chat';
+import { useChatLayout } from '@/context/ChatLayoutContext';
 
 const Chats = ({ onSelectChat }) => {
     const [chats, setChats] = useState([]);
     const { currentUser } = useAuth();
     const { setChatData } = useChat();
-    const router = useRouter();
-
+    const { toggleSidebar} = useChatLayout()
     useEffect(() => {
         if (currentUser?.uid) {
-            const unsubscribe = onSnapshot(doc(db, "UserChats", currentUser.uid), (doc) => {
-                if (doc.exists()) {
-                    const sortedChats = Object.entries(doc.data()).sort(
-                        (a, b) => b[1].date - a[1].date
-                    );
-                    setChats(sortedChats);
-                }
-            });
+            const unsubscribe =()=> ChatService.getChats((data)=> setChats(data))
             return () => unsubscribe();
         }
     }, [currentUser?.uid]);
 
-    const handleSelect = (data, chatId) => {
-        router.push(`/chat/${chatId}`);
+    const handleSelect = (data) => {
         onSelectChat(data);
-        setChatData({
-            chatId: chatId,
-            user: data,
-        });
+        setChatData({chatId: data.id , ...data});
     };
 
     useEffect(() => {
         const handleEsc = (event) => {
             if (event.key === 'Escape') {
-                router.push('/chat');
+                toggleSidebar(true)
+                setChatData(null)
             }
         };
 
@@ -51,7 +39,7 @@ const Chats = ({ onSelectChat }) => {
 
     return (
         <Flex
-            vertical 
+            vertical
             className="flex-1 hide-scrollbar dark:bg-transparent overflow-y-auto h-full w-full"
         >
             <Divider orientation='left' plain orientationMargin={16} className="text-white dark:text-gray-600">
@@ -60,10 +48,10 @@ const Chats = ({ onSelectChat }) => {
             <Flex vertical gap={2}>
                 {chats.map((chat) => (
                     <Flex
-                        key={chat[0]}
-                        onClick={() => handleSelect(chat[1].user, chat[0])}
+                        key={chat.id}
+                        onClick={() => handleSelect(chat)}
                     >
-                        <ChatCard chat={chat[1]} />
+                        <ChatCard chat={chat}/>
                     </Flex>
                 ))}
             </Flex>

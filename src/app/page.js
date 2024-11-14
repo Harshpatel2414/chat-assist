@@ -1,7 +1,7 @@
 'use client';
 
 import { auth, authProvider, db } from '@/firebase/firebaseConfig'; // Import Firebase config
-import { Button, Flex, Image, Typography } from 'antd';
+import { Alert, Button, Flex, Image, notification, Typography } from 'antd';
 import { FaGoogle } from 'react-icons/fa6';
 import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -33,7 +33,7 @@ export default function HomePage() {
         // First time user, create new user document in 'users' collection
         await setDoc(userDocRef, {
           uid: user.uid,
-          name: user.displayName,
+          name: user.displayName.toLowerCase(),
           email: user.email,
           photoURL: user.photoURL,
           lastSeen: serverTimestamp(),
@@ -45,16 +45,17 @@ export default function HomePage() {
       // router.push('/chat'); 
 
     } catch (error) {
+      <Alert type='error' message={error.message}/>
       console.error("Error during login: ", error);
     }
   };
 
   return (
-    <Flex vertical align='center' justify='center' className='h-screen gap-10 bg-main bg-no-repeat bg-center bg-cover'>
-      <Image preview={false} src={'./logo_big.png'} height={180} width={180} className='w-20 h-20 object-contain object-center'/>
-      {/* <Typography.Title level={2} className='text-gray-500'>
-        Welcome to Chat App
-      </Typography.Title> */}
+    <Flex vertical align='center' justify='center' className='h-dvh gap-10 bg-main bg-no-repeat bg-center bg-cover'>
+      <Image preview={false} src={'./logo_icon.png'} height={160} width={160} className='w-20 h-20 object-contain object-center'/>
+        <Typography.Text className='dark:text-gray-50 text-blue-500 text-3xl font-semibold'>
+          Assistance Chat
+        </Typography.Text>
         <Button onClick={handleLogin} type='primary' icon={<FaGoogle />}>
           Sign in with Google
         </Button>

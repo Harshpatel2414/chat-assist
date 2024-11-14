@@ -1,6 +1,6 @@
 "use client"
 import { db } from "@/firebase/firebaseConfig";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, orderBy, query } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react"
 
@@ -13,24 +13,19 @@ export const ChatContextProvider = ({ children }) => {
     
     useEffect(()=>{
         if(!chatData){
-            router.push('/chat')
+            // router.push('/chat')
         }
     },[])
 
     useEffect(() => {
-        if (!chatData) {
-          router.push('/chat')
-        } else {
-          const unSub = onSnapshot(doc(db, 'Chats', chatData.chatId), (doc) => {
-            if (doc.exists()) {
-              setMessages(doc.data().messages);
-            } else {
-              setMessages([]);
-            }
-          });
-    
-          return () => unSub();
-        }
+        if (chatData?.chatId) {
+            const messagesRef = query(collection(doc(db, 'Chats', chatData.chatId), 'messages'), orderBy("date", "asc"));
+            const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
+                const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+              setMessages(data);
+            });
+            return unsubscribe;
+          }
       }, [chatData?.chatId]);
 
     return (

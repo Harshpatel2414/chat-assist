@@ -1,47 +1,59 @@
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, onSnapshot, serverTimestamp, orderBy } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import { v4 as uuidv4 } from 'uuid';
 
-class ChatService {
+class Chat {
   constructor() {
     this.db = db;
   }
 
   // Fetch chats for a user
-  async getChats(userId) {
+  async getChats(callback) {
     try {
-      const userChatsRef = doc(this.db, 'UserChats', userId);
-      const snapshot = await getDoc(userChatsRef);
+      const q = query(
+        collection(db, 'Chats'),
+        orderBy('date', 'desc')
+      );
 
-      if (snapshot.exists()) {
-        const chatsData = snapshot.data();
-        const chatsArray = Object.entries(chatsData).sort(
-          (a, b) => b[1].date - a[1].date
-        );
-        return chatsArray; // Return sorted chats array
-      } else {
-        return []; // Return empty array if no chats
-      }
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .filter((data) => data.user);
+        callback(data)
+      });
+      return () => unsubscribe();
     } catch (error) {
       console.error('Error fetching chats:', error);
       return [];
     }
   }
 
-  async getMessages(chatId) {
+  async addTag(chatId, tags) {
+    const chatRef = doc(this.db, 'Chats', chatId);
     try {
-      const chatRef = doc(this.db, 'Chats', chatId);
-      const snapshot = await getDoc(chatRef);
+      await updateDoc(chatRef, {
+        tags: tags, 
+      });
+    } catch (error) {
+      console.error("Error adding tag: ", error);
+    }
+  }
 
-      if (snapshot.exists()) {
-        const messagesData = snapshot.data();
-        return messagesData.messages || []; 
-      } else {
-        return []; 
-      }
+  getMessages(chatId, callback) {
+    try {
+      const messagesRef = query(
+        collection(doc(db, 'Chats', chatId), 'messages'),
+        orderBy("date", "asc")
+      );
+
+      const unsubscribe = onSnapshot(messagesRef, (snapshot) => {
+        const messages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        callback(messages);
+      });
+
+      return unsubscribe;
     } catch (error) {
       console.error('Error fetching messages:', error);
-      return [];
     }
   }
 
@@ -65,61 +77,59 @@ class ChatService {
   }
 
   // Add a new user to the chat
-  async addUser(currentUser, selectedUser) {
+  async addUser(selectedUser) {
     try {
-      const chatId = currentUser.uid > selectedUser.uid
-        ? currentUser.uid + selectedUser.uid
-        : selectedUser.uid + currentUser.uid;
+      const chatRef = doc(db, "Chats", selectedUser.uid);
+      const chatDoc = await getDoc(chatRef);
 
-      // Create or update the chat in UserChats
-      const currentUserChatsRef = doc(this.db, "UserChats", currentUser.uid);
-      const selectedUserChatsRef = doc(this.db, "UserChats", selectedUser.uid);
+      if (!chatDoc.exists()) {
+        // Create a new chat document if it doesn't exist
+        await setDoc(chatRef, {
+          lastMessage: '',
+          date: serverTimestamp(),
+          user: {
+            displayName: selectedUser.name,
+            photoURL: selectedUser.photoURL,
+            uid: selectedUser.uid,
+          },
+        });
 
-      await updateDoc(currentUserChatsRef, {
-        [chatId]: {
-          user: selectedUser,
-          lastMessage: "",
-          date: new Date()
-        }
-      });
+        // Create a nested empty `Messages` collection within this chat document
+        const messagesCollectionRef = collection(db, "Chats", selectedUser.uid, "Messages");
+        await setDoc(doc(messagesCollectionRef), {}); // Initial empty document in Messages
+      }
 
-      await updateDoc(selectedUserChatsRef, {
-        [chatId]: {
-          user: currentUser,
-          lastMessage: "",
-          date: new Date()
-        }
-      });
-
-      return chatId;
+      // if doc exist then update 
+      await updateDoc(chatRef, {
+        date: serverTimestamp()
+      })
     } catch (error) {
       console.error('Error adding user:', error);
     }
   }
 
   // Send a message in a chat
-  async sendMessage(chatId, senderId, messageText, language) {
+  async sendMessage(chatId, data) {
+
     try {
+      const messagesRef = collection(this.db, 'Chats', chatId, 'messages');
+
+      const messageData = { date: serverTimestamp(), ...data };
+
+      await addDoc(messagesRef, messageData);
+
       const chatRef = doc(this.db, "Chats", chatId);
-
-      const messageData = {
-        id: uuidv4(),
-        senderId,
-        text: messageText,
-        timestamp: new Date(),
-      };
-
-      // Update chat with new message
-      await updateDoc(chatRef, {
-        messages: [...(await getDoc(chatRef)).data().messages, messageData] // Append new message
-      });
-
-      // Update the last message and date in UserChats
-      const userChatRef = doc(this.db, "UserChats", senderId);
-      await updateDoc(userChatRef, {
-        [`${chatId}.lastMessage`]: messageText,
-        [`${chatId}.date`]: new Date(),
-      });
+      if (messageData.img) {
+        await updateDoc(chatRef, {
+          lastMessage: 'image',
+          date: serverTimestamp(),
+        });
+      } else {
+        await updateDoc(chatRef, {
+          lastMessage: data.text,
+          date: serverTimestamp(),
+        });
+      }
 
     } catch (error) {
       console.error('Error sending message:', error);
@@ -127,5 +137,6 @@ class ChatService {
   }
 }
 
-const chatService = new ChatService();
-export default chatService;
+const ChatService = new Chat();
+
+export default ChatService;

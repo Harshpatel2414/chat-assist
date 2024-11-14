@@ -33,7 +33,6 @@ export default function MessageWithMedia({ message, isLastMessage }) {
   // Update the formatted time when the date or message status changes
   useEffect(() => {
     setFormattedTime(formatTime(date));
-
     const intervalId = setInterval(() => {
       setFormattedTime(formatTime(date));
     }, 60000); // Update every minute
@@ -61,16 +60,16 @@ export default function MessageWithMedia({ message, isLastMessage }) {
           src={img}
           alt="media"
           
-          className={`${isCurrentUser ? 'dark:bg-gray-500 bg-gray-300':'bg-blue-400' }  w-full min-h-80 max-h-80 object-center object-cover rounded-lg`}
+          className={`${isCurrentUser ? 'dark:bg-gray-700 bg-gray-200':'bg-blue-400' }  w-full min-h-80 max-h-80 object-center object-cover rounded-lg`}
         />
         {text && <Typography.Paragraph style={{marginBottom:0}}  className="mt-1 mb-0 text-gray-50">
           {text}
         </Typography.Paragraph> }
         
+      </Flex>
         <Typography.Text className="text-xs text-right text-gray-400 mt-1">
           {formattedTime}
         </Typography.Text>
-      </Flex>
     </Flex>
   );
 }

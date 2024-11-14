@@ -39,13 +39,12 @@ const Header = () => {
 
   return (
     <Flex
-      horizontal
       align="center"
       justify="space-between"
-      className="h-16 p-4 bg-blue-800 dark:bg-gray-800 text-white"
+      className="h-16 p-4 bg-blue-800 dark:bg-gray-800 text-white drop-shadow-md"
     >
       {/* User Profile Section */}
-      <Flex horizontal align="center">
+      <Flex align="center">
         <Avatar src={currentUser?.photoURL} size={40} />
         <Flex vertical className="ml-2">
           <div className="text-lg font-bold">{currentUser?.displayName}</div>
@@ -53,7 +52,7 @@ const Header = () => {
       </Flex>
 
       {/* Icon Section */}
-      <Flex horizontal align="center">
+      <Flex align="center">
         <Button
           type="text"
           onClick={toggleTheme}

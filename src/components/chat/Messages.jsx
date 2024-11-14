@@ -1,60 +1,51 @@
 "use client";
-import React, { useEffect, useRef, useContext, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { List, Spin, Typography, Flex } from 'antd';
 import Message from './Message';
 import { useChat } from '@/context/ChatContext';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '@/firebase/firebaseConfig';
 import MessageWithMedia from './MessageWithMedia';
-import { useRouter } from 'next/navigation';
+import ChatService from '@/firebase/chat';
 
 const { Text } = Typography;
 
 const Messages = () => {
   const messagesEndRef = useRef(null);
-  // const [messages, setMessages] = useState(null);
-  const { messages } = useChat()
-  const router = useRouter()
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { chatData } = useChat();
+
   // Fetch real-time messages
-  // useEffect(() => {
-  //   if (!chatData) {
-  //     router.push('/chat')
-  //   } else {
-  //     const unSub = onSnapshot(doc(db, 'Chats', chatData.chatId), (doc) => {
-  //       if (doc.exists()) {
-  //         setMessages(doc.data().messages);
-  //       } else {
-  //         setMessages([]);
-  //       }
-  //     });
-
-  //     return () => unSub();
-  //   }
-  // }, [chatData?.chatId]);
-
-  // Scroll to bottom function
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Scroll when messages change
   useEffect(() => {
-    if (messages && messages.length > 0) {
-      const scrollTimeout = setTimeout(() => {
-        scrollToBottom();
-      }, 100);
+    if (!chatData?.chatId) return;
+    setLoading(true)
 
+    const unsubscribe = ChatService.getMessages(chatData.chatId, (data) => {
+      setMessages(data || []);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+
+  }, [chatData?.chatId]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    };
+    if (Array.isArray(messages) && messages.length > 0) { 
+      const scrollTimeout = setTimeout(scrollToBottom, 100);
       return () => clearTimeout(scrollTimeout);
     }
   }, [messages]);
 
   return (
     <div className="overflow-y-auto hide-scrollbar scroll-smooth h-full p-4 bg-gray-50 dark:bg-gray-900">
-      {!messages ? (
+      {loading ? (
         <Flex align="center" justify="center" className="w-full h-full">
-          <Spin size="large" />
+          <Spin />
         </Flex>
       ) : messages.length === 0 ? (
         <Flex align="center" justify="center" className="w-full h-full">
@@ -62,16 +53,13 @@ const Messages = () => {
         </Flex>
       ) : (
         <List
-          className='w-full '
+          className='w-full'
           dataSource={messages}
-          renderItem={(msg, index) => {
-            if (msg.img) {
-              return <MessageWithMedia key={msg.id} message={msg} isLastMessage={index === messages.length - 1} />
-            }
-            else {
-              return <Message key={msg.id} message={msg} isLastMessage={index === messages.length - 1} />
-            }
-          }}
+          renderItem={(msg, index) => (
+            msg.img ?
+              <MessageWithMedia key={msg.id} message={msg} isLastMessage={index === messages.length - 1} />
+              : <Message key={msg.id} message={msg} isLastMessage={index === messages.length - 1} />
+          )}
         />
       )}
       {/* Dummy div to scroll to */}

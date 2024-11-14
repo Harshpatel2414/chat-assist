@@ -17,14 +17,6 @@ const { Title, Text } = Typography;
 export default function Profile({ toggleProfile }) {
     const { messages, chatData } = useChat();
 
-    // Mock data for user
-    const user = {
-        name: "Real Estate Deals",
-        email: "real.estate@example.com",
-        membersCount: 10,
-        photoURL: "https://randomuser.me/api/portraits/men/23.jpg", // Replace with actual user photo URL
-    };
-
     const sharedFiles = {
         allFiles: 231,
         allLinks: 45,
@@ -56,10 +48,8 @@ export default function Profile({ toggleProfile }) {
         ],
     };
 
-    // State to manage visibility of file types and images
     const [showImages, setShowImages] = useState(false);
 
-    // Function to extract image URLs from messages
     const getImageUrlsFromMessages = (messages) => {
         return messages
             .filter((msg) => msg.img) // Filter messages that have an image property
@@ -89,7 +79,7 @@ export default function Profile({ toggleProfile }) {
                         <Text level={5} className="secondary capitalize font-semibold text-lg mb-0 text-center text-blue-500 dark:text-blue-500">
                             {chatData?.user.displayName}
                         </Text>
-                        <Text className="secondary text-center text-gray-400 dark:text-gray-500">{user.membersCount} members</Text>
+                        <Text className="secondary text-center text-gray-400 dark:text-gray-500">{chatData?.user?.membersCount || 4} members</Text>
                     </Flex>
                 </Flex>
             </Card>
@@ -113,7 +103,6 @@ export default function Profile({ toggleProfile }) {
                 <Flex vertical className="w-full drop-shadow-md bg-blue-50 dark:bg-gray-800 rounded-lg p-4">
                     {sharedFiles.fileTypes.map((fileType) => (
                         <Flex
-                            align="center"
                             key={fileType.type}
                             gap={8}
                             className="p-2 rounded-lg cursor-pointer hover:bg-blue-100 dark:hover:bg-gray-700 select-none"
@@ -123,7 +112,7 @@ export default function Profile({ toggleProfile }) {
                                 }
                             }}
                         >
-                            <Flex align="center" bg-blue-100 rounded-lg>
+                            <Flex align="center">
                                 {fileType.icon}
                             </Flex>
                             <Flex vertical gap={2}>
@@ -149,9 +138,9 @@ export default function Profile({ toggleProfile }) {
                         </Button>
                     </Flex>
                     {imageUrls.length > 0 ? (
-                        <Flex wrap justify="space-around" gap={8}>
+                        <Flex wrap gap={10}>
                             {imageUrls.map((url, index) => (
-                                <Image key={index} width={100} height={100} src={url} alt={`Shared Image ${index}`} className="p-2 bg-gray-500 overflow-hidden object-cover rounded-lg" />
+                                <Image key={index} width={100} height={100} src={url} alt={`Shared Image ${index}`} className="p-2 bg-blue-100 dark:bg-gray-500 overflow-hidden object-cover rounded-lg" />
                             ))}
                         </Flex>
                     ) : (

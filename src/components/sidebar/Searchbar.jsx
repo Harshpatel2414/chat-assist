@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { collection, getDocs, query, serverTimestamp, setDoc, updateDoc, where, doc, getDoc } from 'firebase/firestore';
-import { Avatar, Typography, Input, Flex } from 'antd';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Avatar, Typography, Input, Flex, Button } from 'antd';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/firebase/firebaseConfig';
+import { PlusOutlined } from '@ant-design/icons';
+import ChatService from '@/firebase/chat';
 
 const { Search } = Input;
 const { Text } = Typography;
@@ -11,7 +13,6 @@ const Searchbar = () => {
     const { currentUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [users, setUsers] = useState([]);
-    const [error, setError] = useState(false);
 
     // Handle search based on input term
     const handleSearch = async () => {
@@ -34,53 +35,20 @@ const Searchbar = () => {
             });
 
             setUsers(matchedUsers.length > 0 ? matchedUsers : []);
-            setError(matchedUsers.length === 0);
         } catch (err) {
             console.error(err);
-            setError(true);
         }
     };
 
     const handleSelect = async (selectedUser) => {
-        const combinedId = currentUser.uid > selectedUser.uid
-            ? currentUser.uid + selectedUser.uid
-            : selectedUser.uid + currentUser.uid;
-
         try {
-            const res = await getDoc(doc(db, "Chats", combinedId));
-
-            if (!res.exists()) {
-                // Create a new chat if it doesn't exist
-                await setDoc(doc(db, "Chats", combinedId), { messages: [] });
-            }
-
-            // Update current user's chat info
-            await updateDoc(doc(db, "UserChats", currentUser.uid), {
-                [`${combinedId}.user`]: {
-                    uid: selectedUser.uid,
-                    displayName: selectedUser.name,
-                    photoURL: selectedUser.photoURL,
-                },
-                [`${combinedId}.date`]: serverTimestamp(),
-            });
-
-            // Update selected user's chat info
-            await updateDoc(doc(db, "UserChats", selectedUser.uid), {
-                [`${combinedId}.user`]: {
-                    uid: currentUser.uid,
-                    displayName: currentUser.displayName,
-                    photoURL: currentUser.photoURL,
-                },
-                [`${combinedId}.date`]: serverTimestamp(),
-            });
-
+            await ChatService.addUser(selectedUser)
         } catch (error) {
-            console.error(error);
-            setError(true);
+            console.log(error);
+        } finally {
+            setSearchTerm('');
+            setUsers([]);
         }
-
-        setUsers([]);
-        setSearchTerm('');
     };
 
     return (
@@ -89,7 +57,7 @@ const Searchbar = () => {
                 placeholder="input search text"
                 onSearch={handleSearch}
                 onChange={(e) => {
-                    const value = e.target.value;
+                    const value = e.target.value.toLowerCase();
                     setSearchTerm(value);
                     if (value === '') {
                         setUsers([]);
@@ -106,23 +74,31 @@ const Searchbar = () => {
                             <h1 className="text-gray-700 dark:text-gray-500 text-center">Users found</h1>
                             {users.map((user) => (
                                 <Flex
-                                    horizontal
                                     align="center"
-                                    onClick={() => handleSelect(user)}
+
                                     key={user.uid}
-                                    className="p-2 bg-white dark:bg-gray-700 rounded-lg hover:dark:bg-gray-600 cursor-pointer"
+                                    className="p-2 bg-white dark:bg-gray-700 rounded-lg cursor-pointer"
                                 >
                                     <Avatar src={user.photoURL} size={40} />
-                                    <Flex vertical className="ml-3">
-                                        <Text strong className="text-blue-500 dark:text-gray-300 capitalize">
+                                    <Flex vertical className="ml-3 flex-1">
+                                        <Text strong className="text-gray-700 dark:text-gray-300 capitalize">
                                             {user.name}
                                         </Text>
                                     </Flex>
+                                    <Button
+                                        size='small'
+                                        iconPosition='start'
+                                        onClick={() => handleSelect(user)}
+                                        icon={<PlusOutlined />}
+                                        className='dark:text-blue-500  bg-blue-500 dark:bg-blue-700 text-xs text-white border-none'
+                                    >
+                                        Add
+                                    </Button>
                                 </Flex>
                             ))}
                         </Flex>
                     ) : (
-                        <Flex horizontal justify="center" className="p-3 text-gray-500">No users found</Flex>
+                        <Flex justify="center" className="p-3 text-gray-500">No users found</Flex>
                     )}
                 </Flex>
             )}

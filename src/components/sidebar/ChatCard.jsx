@@ -9,16 +9,16 @@ const ChatCard = ({ chat }) => {
     const { user, lastMessage, date, messageRead } = chat;
 
     const formatDate = (timestamp) => {
-        if (!timestamp) return ""; // Handle case when timestamp is invalid
+        if (!timestamp) return ""; 
 
         const date = timestamp.toDate();
         const now = new Date();
         
-        const timeDiff = Math.abs(now - date); // Time difference in milliseconds
-        const diffDays = Math.floor(timeDiff / (1000 * 3600 * 24)); // Convert to days
+        const timeDiff = Math.abs(now - date); 
+        const diffDays = Math.floor(timeDiff / (1000 * 3600 * 24)); 
 
         if (diffDays === 0) {
-            return convertTimeStamp(timestamp); // Show time if today
+            return convertTimeStamp(timestamp); 
         } else if (diffDays === 1) {
             return "Yesterday";
         } else {
@@ -27,7 +27,7 @@ const ChatCard = ({ chat }) => {
     };
 
     const convertTimeStamp = (timestamp) => {
-        if (!timestamp) return ""; // Handle case when timestamp is invalid
+        if (!timestamp) return ""; 
 
         const date = timestamp.toDate();
         const hour = date.getHours();
@@ -60,7 +60,7 @@ const ChatCard = ({ chat }) => {
             </Flex>
             <Flex vertical align="end" className="w-1/4 text-right">
                 <Text className="text-xs text-gray-500 mb-1">
-                    {formatDate(date)} {/* Show formatted date */}
+                    {formatDate(date)}
                 </Text>
                 {lastMessage?.unreadCount > 0 && ( // Show badge only if there are unread messages
                     <Badge
