@@ -1,7 +1,7 @@
 "use client"; // Ensure this file is treated as a client-side component in Next.js
 
 import { useEffect, useRef, useState } from "react";
-import { Avatar, List, Typography, Flex, Spin } from "antd";
+import { Avatar, Typography, Flex, Spin } from "antd";
 import { CustomerServiceOutlined } from "@ant-design/icons";
 import {
   doc,
@@ -21,6 +21,12 @@ const Assistant = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { currentUser } = useAuth();
   const messagesEndRef = useRef(null);
+
+  const defaultMessage = {
+    senderId: "bot",
+    text: "I'm happy to chat and answer any questions. To better assist you, have you used our software before, or is this your first time?",
+    date: Date.now(),
+  };
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -44,24 +50,16 @@ const Assistant = () => {
 
   useEffect(() => {
     if (!currentUser && isFetched) return;
+
     const messagesQuery = query(messagesCollectionRef, orderBy("date", "asc"));
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const msgs = snapshot.docs.map((doc) => doc.data());
-      if (msgs.length < 1) {
-        // Add a default message if no messages exist
-        setMessages([
-          {
-            senderId: "bot",
-            text: "I'm happy to chat and answer any questions. To better assist you, have you used our software before, or is this your first time?",
-            date: Date.now(),
-          },
-        ]);
-      } else {
-        setMessages(msgs);
-      }
-      setIsLoading(false)
+      setMessages(msgs);
+
+      setIsLoading(false);
+      setIsFetched(true);
     });
-    setIsFetched(true);
+
     return () => unsubscribe();
   }, [currentUser, isFetched]);
 
@@ -93,28 +91,28 @@ const Assistant = () => {
         vertical
         className="p-4 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800 hide-scrollbar"
       >
-         {isLoading ? (
+        {isLoading ? (
           <Flex justify="center" align="center" className="h-full">
             <Spin size="small" tip="Loading messages..." />
           </Flex>
-        ) : (
-          <List
-            className="w-full"
-            dataSource={messages}
-            renderItem={(msg, index) => (
-              <AssistantMessage
-                key={index} // Use the index to uniquely identify each message
-                message={msg}
-                isLastMessage={index === messages.length - 1}
-              />
-            )}
-          />
-        )}
+        ) : messages.length > 0 ? (
+          messages.map((msg, index) => (
+            <AssistantMessage
+              key={index} // Use the index to uniquely identify each message
+              message={msg}
+              isLastMessage={index === messages.length - 1}
+            />
+          ))
+        ) : (<AssistantMessage
+          key={1}
+          message={defaultMessage}
+          isLastMessage={true}
+        />)}
         <div ref={messagesEndRef} />
       </Flex>
 
       {/* Input Area */}
-        <AssistantInput />
+      <AssistantInput />
     </Flex>
   );
 };

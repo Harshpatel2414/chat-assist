@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Input, Button, Tag, notification, Typography, Flex } from 'antd';
 import { PlusOutlined } from '@ant-design/icons'
 import ChatService from '@/firebase/chat';
 
 const TagModal = ({ chatId, visible, onClose, tags, setTags }) => {
   const [newTag, setNewTag] = useState(""); 
-  const [selectedTags, setSelectedTags] = useState(tags);
+  const [selectedTags, setSelectedTags] = useState([]);
 
   const suggestedTags = ['Payment', 'Urgent', 'Follow Up', 'Support', 'Invoice', 'Reminder']; // Example suggested tags
-
+  
+  useEffect(()=>{
+    if(tags){
+      setSelectedTags(tags)
+    }
+  },[tags])
   const addTag = async () => {
     if (selectedTags.length === 0) return; 
     try {

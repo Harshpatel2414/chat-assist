@@ -17,12 +17,12 @@ import TagModal from './TagModal';
 
 const ChatHeader = ({ onCloseChat, showProfile }) => {
   const { chatData } = useChat();
-  const [tags, setTags] = useState(chatData?.tags || []);
+  const [tags, setTags] = useState([]);
   const [showTagModal, setShowTagModal] = useState(false);
 
   useEffect(()=>{
      if(chatData?.tags){
-      setTags(chatData.tags)
+      setTags(chatData.tags || [])
      }
   },[chatData])
 

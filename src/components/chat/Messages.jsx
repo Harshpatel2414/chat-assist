@@ -10,8 +10,7 @@ const { Text } = Typography;
 
 const Messages = () => {
   const messagesEndRef = useRef(null);
-  const [loading, setLoading] = useState(true);
-  const { messages } = useChat();
+  const { messages, loading } = useChat();
 
   // Scroll to bottom when messages change
   useEffect(() => {

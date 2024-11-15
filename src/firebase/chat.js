@@ -87,6 +87,7 @@ class Chat {
         // Create a new chat document if it doesn't exist
         await setDoc(chatRef, {
           lastMessage: '',
+          tags:[],
           date: serverTimestamp(),
           user: {
             displayName: selectedUser.name,

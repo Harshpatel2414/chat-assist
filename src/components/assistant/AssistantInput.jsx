@@ -50,6 +50,7 @@ const AssistantInput = () => {
             displayName: currentUser.displayName,
           },
           lastMessage: newMessage,
+          tags: [],
           date: serverTimestamp(),
         });
       }
@@ -65,13 +66,13 @@ const AssistantInput = () => {
   };
 
   return (
-    <Flex className="flex gap-1 items-center dark:bg-gray-700 p-2 drop-shadow-md">
+    <Flex className="flex gap-1 items-center bg-gray-50 border-t dark:bg-gray-700 p-2 drop-shadow-md">
       <Input
         placeholder="Write a message..."
         value={newMessage}
         onChange={(e) => setNewMessage(e.target.value)}
         onPressEnter={handleSendMessage}
-        className="flex-1 focus:border-none dark:text-gray-300 dark:focus:text-gray-300 bg-transparent hover:bg-transparent dark:bg-gray-600 focus:outline-none border-none dark:placeholder:text-gray-400 focus:bg-transparent"
+        className="flex-1 focus:border-none bg-gray-200 dark:text-gray-300 dark:focus:text-gray-300 hover:bg-transparent dark:bg-gray-600 focus:outline-none border-none dark:placeholder:text-gray-400 focus:bg-transparent"
       />
       <Button
         icon={<SendOutlined />}
