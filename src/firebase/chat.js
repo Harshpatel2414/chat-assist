@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, onSnapshot, serverTimestamp, orderBy } from "firebase/firestore";
-import { db } from "./firebaseConfig";
-import { v4 as uuidv4 } from 'uuid';
+import { db, storage } from "./firebaseConfig";
+import { v4 as uuid } from "uuid";
+import { getDownloadURL, ref, uploadBytes, uploadBytesResumable } from "firebase/storage";
 
 class Chat {
   constructor() {
@@ -32,7 +33,7 @@ class Chat {
     const chatRef = doc(this.db, 'Chats', chatId);
     try {
       await updateDoc(chatRef, {
-        tags: tags, 
+        tags: tags,
       });
     } catch (error) {
       console.error("Error adding tag: ", error);
@@ -95,7 +96,7 @@ class Chat {
         });
 
         // Create a nested empty `Messages` collection within this chat document
-        const messagesCollectionRef = collection(db, "Chats", selectedUser.uid, "Messages");
+        const messagesCollectionRef = collection(db, "Chats", selectedUser.uid, "messages");
         await setDoc(doc(messagesCollectionRef), {}); // Initial empty document in Messages
       }
 
@@ -124,6 +125,11 @@ class Chat {
           lastMessage: 'image',
           date: serverTimestamp(),
         });
+      } else if (messageData.video) {
+        await updateDoc(chatRef, {
+          lastMessage: 'video',
+          date: serverTimestamp(),
+        });
       } else {
         await updateDoc(chatRef, {
           lastMessage: data.text,
@@ -134,6 +140,37 @@ class Chat {
     } catch (error) {
       console.error('Error sending message:', error);
     }
+  }
+
+  async uploadMedia(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      try {
+        const fileRef = ref(storage, uuid());
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        // Listen for state changes and progress
+        uploadTask.on(
+          "state_changed",
+          (snapshot) => {
+            const progress = Math.round(
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+            );
+            if (onProgress) {
+              onProgress(progress);
+            }
+          },
+          (error) => {
+            reject(error);
+          },
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadURL);
+          }
+        );
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
 }
 

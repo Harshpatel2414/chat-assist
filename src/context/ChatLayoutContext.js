@@ -1,3 +1,5 @@
+'use client'
+
 // LayoutContext.js
 import React, { createContext, useState, useRef, useEffect, useContext } from "react";
 

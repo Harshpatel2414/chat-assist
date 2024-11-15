@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Typography, Popover, Button, Select, Space } from "antd";
+import {
+  Typography,
+  Popover,
+  Button,
+  Select,
+  Space,
+  Image,
+  Flex,
+} from "antd";
 import {
   MoreOutlined,
   TranslationOutlined,
@@ -15,7 +23,7 @@ import { Timestamp } from "firebase/firestore";
 const { Text } = Typography;
 const { Option } = Select;
 
-const Message = ({ message, isLastMessage }) => {
+const AssistantMessage = ({ message, isLastMessage }) => {
   const [formattedTime, setFormattedTime] = useState("");
   const [displayText, setDisplayText] = useState(message.text);
   const [translatedText, setTranslatedText] = useState(null);
@@ -81,7 +89,7 @@ const Message = ({ message, isLastMessage }) => {
       setFormattedTime(formatTime(date));
     }, 60000);
     return () => clearInterval(intervalId);
-  }, [date, isLastMessage]);
+  }, [date]);
 
   return (
     <div
@@ -103,17 +111,64 @@ const Message = ({ message, isLastMessage }) => {
               : "bg-blue-500 dark:bg-blue-800 text-gray-100 rounded-tl-none"
           }`}
         >
-          <Text
-            className={`text-base text-justify ${
-              currentUser.uid === senderId
-                ? "text-right text-gray-600 dark:text-gray-300"
-                : "text-left text-gray-100"
-            }`}
-          >
-            {displayText}
-          </Text>
+          {message.img || message.video ? (
+            <>
+              {message.img && (
+                <Flex vertical>
+                  <Image
+                    src={message.img}
+                    alt="media"
+                    className={`${
+                      currentUser
+                        ? "dark:bg-gray-700 bg-gray-200"
+                        : "bg-blue-400"
+                    }  min-w-60 min-h-44 max-w-60 max-h-44 object-center object-cover rounded-lg`}
+                  />
+                  {message.text && (
+                    <Typography.Paragraph
+                      style={{ marginBottom: 0 }}
+                      className="mt-1 mb-0 text-gray-50"
+                    >
+                      {text}
+                    </Typography.Paragraph>
+                  )}
+                </Flex>
+              )}
+              {message.video && (
+                <Flex vertical>
+                  <video
+                    controls
+                    className={`${
+                      currentUser
+                        ? "dark:bg-gray-700 bg-gray-200"
+                        : "bg-blue-400"
+                    } max-h-44 max-w-60 min-w-60 min-h-44 w-full object-center object-contain rounded-lg`}
+                    src={message.video}
+                  />
+                  {message.text && (
+                    <Typography.Paragraph
+                      style={{ marginBottom: 0 }}
+                      className="mt-1 mb-0 text-gray-50"
+                    >
+                      {text}
+                    </Typography.Paragraph>
+                  )}
+                </Flex>
+              )}
+            </>
+          ) : (
+            <Text
+              className={`text-base text-justify ${
+                currentUser.uid === senderId
+                  ? "text-right text-gray-600 dark:text-gray-300"
+                  : "text-left text-gray-100"
+              }`}
+            >
+              {displayText}
+            </Text>
+          )}
         </div>
-        {showTranslateIcon && (
+        {showTranslateIcon && !message.img && !message.video && (
           <Popover
             content={
               <Space direction="vertical">
@@ -180,4 +235,4 @@ const Message = ({ message, isLastMessage }) => {
   );
 };
 
-export default Message;
+export default AssistantMessage;

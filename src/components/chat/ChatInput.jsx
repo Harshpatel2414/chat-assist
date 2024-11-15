@@ -1,76 +1,87 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Input, Button, Flex, Image, Upload, Progress } from 'antd';
-import { SmileOutlined, SendOutlined, CloseOutlined, LinkOutlined } from '@ant-design/icons';
-import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
-import { v4 as uuid } from 'uuid';
-import { useAuth } from '@/context/AuthContext';
-import { useChat } from '@/context/ChatContext';
-import { storage } from '@/firebase/firebaseConfig';
-import emojiData from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
-import { useTheme } from '@/context/ThemeContext';
-import ChatService from '@/firebase/chat';
+import React, { useState } from "react";
+import { Input, Button, Flex, Image, Upload, Progress, Dropdown } from "antd";
+import {
+  SmileOutlined,
+  SendOutlined,
+  CloseOutlined,
+  LinkOutlined,
+  FileImageOutlined,
+  VideoCameraOutlined,
+} from "@ant-design/icons";
+import { useAuth } from "@/context/AuthContext";
+import { useChat } from "@/context/ChatContext";
+import Picker from "@emoji-mart/react";
+import data from '@emoji-mart/data'
+import { useTheme } from "@/context/ThemeContext";
+import ChatService from "@/firebase/chat";
 
 const ChatInput = () => {
-  const [message, setMessage] = useState('');
-  const [caption, setCaption] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [message, setMessage] = useState("");
+  const [caption, setCaption] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null); // Generalized file state
   const [isUploading, setIsUploading] = useState(false);
-  const [image, setImage] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false); // Emoji picker toggle
   const { currentUser } = useAuth();
   const { chatData } = useChat();
-  const { theme} = useTheme();
+  const { theme } = useTheme();
 
-  const handleSend = async () => {
-    if (selectedImage) {
-      const storageRef = ref(storage, uuid());
-      const uploadTask = uploadBytesResumable(storageRef, image);
-
-      setIsUploading(true);
-      setUploadProgress(0);
-
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress);
-        },
-        (error) => {
-          console.error('Upload error:', error);
-          setIsUploading(false);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          await ChatService.sendMessage(chatData.chatId,{
-            text: caption,
-            img: downloadURL,
-            senderId: currentUser.uid,
-          })
-          setIsUploading(false);
-          setSelectedImage(null);
-          setImage(null);
-          setMessage('');
-        }
-      );
-    } else {
-      await ChatService.sendMessage(chatData.chatId,{
-        text: message,
-        senderId: currentUser.uid,
-      })
-      setMessage('');
+  // Handle any file change (image, video, document)
+  const handleFileChange = (info) => {
+    const file = info.file;
+    if (file) {
+      const fileUrl = URL.createObjectURL(file);
+      setSelectedFile({
+        fileUrl,
+        file,
+        type: file.type,
+      });
     }
   };
 
-  const handleImageChange = (info) => {
-    const file = info.file;
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-      setImage(file);
+  const handleSend = async () => {
+    if (selectedFile) {
+      try {
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        const downloadURL = await ChatService.uploadMedia(
+          selectedFile.file,
+          (progress) => setUploadProgress(progress)
+        );
+        setSelectedFile(null);
+        setIsUploading(false);
+
+        if (selectedFile.type.startsWith("image")) {
+          await ChatService.sendMessage(chatData.chatId, {
+            text: caption,
+            img: downloadURL,
+            senderId: currentUser.uid,
+          });
+        } else if (selectedFile.type.startsWith("video")) {
+          await ChatService.sendMessage(chatData.chatId, {
+            text: caption,
+            video: downloadURL,
+            senderId: currentUser.uid,
+          });
+        }
+        setCaption("");
+        setMessage("");
+      } catch (error) {
+        console.error("Failed to upload or send the file:", error);
+        setIsUploading(false);
+      }
+    } else {
+      if (message.trim().length < 1) {
+        return;
+      }
+      await ChatService.sendMessage(chatData.chatId, {
+        text: message,
+        senderId: currentUser.uid,
+      });
+      setMessage("");
     }
   };
 
@@ -78,19 +89,70 @@ const ChatInput = () => {
     setMessage((prev) => prev + emoji.native);
   };
 
+  // Menu items for Upload components
+  const items = [
+    {
+      key: "1",
+      label: (
+        <Upload
+          accept="image/*"
+          showUploadList={false}
+          beforeUpload={() => false}
+          onChange={handleFileChange}
+        >
+          <Button
+            className=" dark:text-gray-700 text-blue-500 border-none"
+            icon={<FileImageOutlined />}
+          >
+            Images
+          </Button>
+        </Upload>
+      ),
+    },
+    {
+      key: "2",
+      label: (
+        <Upload
+          accept="video/*"
+          showUploadList={false}
+          beforeUpload={() => false}
+          onChange={handleFileChange}
+          className="w-full"
+        >
+          <Button
+            className=" dark:text-gray-700 text-blue-500 border-none"
+            icon={<VideoCameraOutlined />}
+          >
+            Videos
+          </Button>
+        </Upload>
+      ),
+    },
+  ];
+
   return (
     <div className="drop-shadow-lg sticky bottom-0 flex items-center h-16 w-full px-4 bg-white dark:bg-gray-800">
-      {selectedImage && (
-        <div className="absolute mx-auto md:mx-4 right-0 left-0 bottom-[72px] z-40 w-full max-w-96 max-h-96 md:w-96 p-2 bg-white shadow-lg rounded-md dark:bg-gray-700">
-          <Image
-            src={selectedImage}
-            alt="Selected"
-            width={'100%'}
-            height={'100%'}
-            preview={false}
-            loading={isUploading}
-            className="object-contain object-center rounded-t-md w-full min-h-80 max-h-80 bg-gray-200 dark:bg-gray-600"
-          />
+      {selectedFile && (
+        <div className="absolute mx-auto md:mx-4 right-0 left-0 bottom-[72px] z-40 w-full max-w-96 min-h-40 md:w-96 p-2 bg-white shadow-lg rounded-md dark:bg-gray-700">
+          {selectedFile.type.startsWith("image") && (
+            <Image
+              src={selectedFile.fileUrl}
+              alt="Selected"
+              width={"100%"}
+              height={"100%"}
+              preview={false}
+              loading={isUploading}
+              className="object-contain object-center rounded-t-md w-full min-h-80 max-h-80 bg-gray-200 dark:bg-gray-600"
+            />
+          )}
+          {selectedFile.type.startsWith("video") && (
+            <video
+              controls
+              width="200px"
+              className="object-center object-contain rounded-t-md w-full h-fit max-h-80 max-h-80 bg-gray-200 dark:bg-gray-600 mb-2"
+              src={selectedFile.fileUrl}
+            />
+          )}
           <div className="flex items-center w-full bg-gray-50 dark:bg-gray-600 rounded-b-lg">
             <Input
               value={caption}
@@ -110,26 +172,28 @@ const ChatInput = () => {
           <Button
             type="text"
             icon={<CloseOutlined />}
-            onClick={() => setSelectedImage(null)}
+            onClick={() => setSelectedFile(null)}
             className="absolute top-1 right-1 text-blue-600 bg-white dark:bg-gray-700 dark:text-gray-50"
           />
           {isUploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-md">
-              <Progress type="circle" size={40} percent={uploadProgress} />
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-black bg-opacity-50 dark:bg-opacity-70 rounded-md">
+              <Progress type="circle" size={40} percent={uploadProgress} className="text-gray-50" />
             </div>
           )}
         </div>
       )}
 
       <Flex align="center" className="w-full gap-2">
-        <Upload
-          accept="image/*"
-          showUploadList={false}
-          beforeUpload={() => false}
-          onChange={handleImageChange}
+        <Dropdown
+          menu={{ items }}
+          className="text-blue-500 dark:bg-gray-500 dark:text-gray-50 hover:bg-gray-800 border-none"
+          placement="topLeft"
         >
-          <Button className="dark:bg-gray-700 dark:text-gray-50 text-blue-500 border-none" icon={<LinkOutlined />} />
-        </Upload>
+          <Button
+            className="dark:bg-gray-700 dark:text-gray-50 text-blue-500 border-none"
+            icon={<LinkOutlined />}
+          />
+        </Dropdown>
 
         <Button
           icon={isEmojiPickerOpen ? <CloseOutlined /> : <SmileOutlined />}
@@ -139,7 +203,13 @@ const ChatInput = () => {
 
         {isEmojiPickerOpen && (
           <div className="absolute bottom-20 left-5 z-50">
-            <Picker onEmojiSelect={handleEmojiSelect} theme={theme} />
+            <Picker
+              previewPosition='none'
+              searchPosition='none'
+              data={data}
+              theme={theme}
+              onEmojiSelect={handleEmojiSelect}
+            />
           </div>
         )}
 
