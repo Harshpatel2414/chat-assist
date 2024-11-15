@@ -122,7 +122,7 @@ const AssistantMessage = ({ message, isLastMessage }) => {
                       currentUser
                         ? "dark:bg-gray-700 bg-gray-200"
                         : "bg-blue-400"
-                    }  min-w-60 min-h-44 max-w-60 max-h-44 object-center object-cover rounded-lg`}
+                    }  w-full min-h-44 max-w-60 max-h-44 object-center object-cover rounded-lg`}
                   />
                   {message.text && (
                     <Typography.Paragraph
