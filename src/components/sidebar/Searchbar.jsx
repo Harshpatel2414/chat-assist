@@ -90,7 +90,7 @@ const Searchbar = () => {
                                         iconPosition='start'
                                         onClick={() => handleSelect(user)}
                                         icon={<PlusOutlined />}
-                                        className='dark:text-blue-500  bg-blue-500 dark:bg-blue-700 text-xs text-white border-none'
+                                        className=' bg-blue-500 dark:bg-blue-700 text-xs text-white border-none'
                                     >
                                         Add
                                     </Button>
