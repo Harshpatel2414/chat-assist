@@ -1,4 +1,4 @@
-"use client"; // Ensure this file is treated as a client-side component in Next.js
+"use client"; 
 
 import { useEffect, useRef, useState } from "react";
 import { Avatar, Typography, Flex, Spin } from "antd";
