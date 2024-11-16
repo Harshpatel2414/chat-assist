@@ -11,10 +11,15 @@ const Chats = ({ onSelectChat }) => {
     const { currentUser } = useAuth();
     const { setChatData } = useChat();
     const { toggleSidebar} = useChatLayout()
+    
     useEffect(() => {
         if (currentUser?.uid) {
-            const unsubscribe =()=> ChatService.getChats((data)=> setChats(data))
-            return () => unsubscribe();
+            const unsubscribe = ChatService.getChats((data) => {
+                setChats(data);
+            });
+            return () => {
+                unsubscribe();
+            };
         }
     }, [currentUser?.uid]);
 

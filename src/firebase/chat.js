@@ -9,7 +9,7 @@ class Chat {
   }
 
   // Fetch chats for a user
-  async getChats(callback) {
+  getChats(callback) {
     try {
       const q = query(
         collection(db, 'Chats'),
@@ -17,12 +17,11 @@ class Chat {
       );
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((data) => data.user);
-        callback(data)
+        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        callback(data);
       });
-      return () => unsubscribe();
+  
+      return unsubscribe;
     } catch (error) {
       console.error('Error fetching chats:', error);
       return [];
