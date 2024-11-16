@@ -66,7 +66,7 @@ const Assistant = () => {
   return (
     <Flex
       vertical
-      className="fixed bottom-20 right-8 w-[360px] md:w-[400px] h-[500px] overflow-hidden drop-shadow-md rounded-lg"
+      className="fixed bottom-20 right-8 w-sm md:w-[400px] h-[500px] overflow-hidden drop-shadow-md rounded-lg"
     >
       {/* Header */}
       <Flex
